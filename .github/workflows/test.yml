@@ -24,7 +24,7 @@ jobs:
       - name: Start app
         run: node index.js &
 
-      - name: Wait
+      - name: Wait for app
         run: sleep 5
 
       - name: Test API
