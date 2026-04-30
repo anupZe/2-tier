@@ -1,35 +1,31 @@
-name: Build and Push to ECR
+name: Test App
 
 on:
-  push:
+  pull_request:
     branches:
       - main
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
-          aws-region: ap-south-1
+          node-version: 18
 
-      - name: Login to ECR
-        run: |
-          aws ecr get-login-password --region ap-south-1 \
-          | docker login --username AWS --password-stdin <your-ecr-url>
+      - name: Install dependencies
+        run: npm install
 
-      - name: Build Docker image
-        run: docker build -t eks-app .
+      - name: Start app
+        run: node index.js &
 
-      - name: Tag Docker image
-        run: docker tag eks-app:latest <your-ecr-url>:latest
+      - name: Wait
+        run: sleep 5
 
-      - name: Push to ECR
-        run: docker push <your-ecr-url>:latest
+      - name: Test API
+        run: curl http://localhost:3000
