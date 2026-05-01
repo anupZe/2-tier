@@ -1,47 +1,34 @@
+
+name: Node.js Package
+
+on:
+  release:
+    types: [created]
+
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: npm ci
+      - run: npm test
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Start app
+  publish-gpr:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://npm.pkg.github.com/
+      - run: npm ci
+      - run: npm publish
         env:
-          DB_HOST: localhost
-          DB_USER: testuser
-          DB_PASS: testpass
-          DB_NAME: testdb
-        run: node index.js &
-
-      - name: Wait for app
-        run: |
-          for i in {1..15}; do
-            curl -s http://localhost:3000 && echo "App is up!" && exit 0
-            echo "Waiting... attempt $i"
-            sleep 2
-          done
-          exit 1
-
-      - name: Test API
-        run: curl --fail http://localhost:3000
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
