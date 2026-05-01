@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20        # ← 18 se 20 kiya
 
       - name: Install dependencies
         run: npm install
@@ -24,8 +24,15 @@ jobs:
       - name: Start app
         run: node index.js &
 
-      - name: Wait for app to be ready
-        run: npx wait-on http://localhost:3000 --timeout 30000
+      - name: Wait for app
+        run: |
+          for i in {1..15}; do
+            curl -s http://localhost:3000 && echo "App is up!" && exit 0
+            echo "Waiting... attempt $i"
+            sleep 2
+          done
+          echo "App failed to start!"
+          exit 1
 
       - name: Test API
         run: curl --fail http://localhost:3000
